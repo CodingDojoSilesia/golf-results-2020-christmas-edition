@@ -1,0 +1,15 @@
+( $F, $V, $_ ) = @ARGV;
+$s = 1;
+map {
+    $l = /(#?)(.?)\./;
+    $f = y/|// ? 0 : ~~ ( .48 + 44e3 * 2**( ( !!$1 - 56 + index aDrEFkGoAzH, $` ) / 12 + $2 ) ) / 25 * $s;
+    {
+        $s = ( $S = sin( $i++ * atan2( 1, 0 ) / $F * $f ) ) < 0 ? -1 : 1;
+        $i = 1, last if $i > $F / $' & ( $s != $l | !$f );
+        push @T, 128 + $V * $S;
+        $l = $s;
+        redo
+    }
+} split /,/;
+open o, "|base64";
+print o pack "A4VA8V5A4VC*", RIFF, 44 + @T, WAVEfmt, 16, 65537, $F, $F, 524289, data, ~~ @T, @T
