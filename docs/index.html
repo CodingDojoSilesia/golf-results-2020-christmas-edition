@@ -1,0 +1,485 @@
+<!-- human, stop hacking this site now -->
+<html>
+    <head>
+        <title>Coding Dojo Silesia Code Golf Foobarish Edition - HOWTO</title>
+        <link rel="stylesheet" type="text/css" href="css.css" />
+    </head>
+    <body>
+
+<h1>Coding Dojo Silesia Code Golf Foobarish Edition HOWTO</h1>
+<div class="sld wide">
+    <a href=/what>What is Code Golf?</a> <br />
+
+<ol>
+    <li><a href="#challenge">Challenge</a></li>
+    <li><a href="#rules">Rules</a></li>
+    <li><a href="#note">Note notation</a></li>
+    <li><a href="#wav">Conversion of notes to WAV</a></li>
+    <li><a href="#data">Data</a></li>
+    <li><a href="#header">Header</a></li>
+    <li><a href="#input">Input</a></li>
+    <li><a href="#output">Output</a></li>
+    <li><a href="#examples">Examples</a></li>
+    <li><a href="#support">Support</a></li>
+</ol>
+
+<h2 id="challenge">Challenge</h2>
+
+<p>For the carols given in the special note notation, generate a WAV sound file encoded in Base64.</p>
+
+<h2 id="rules">Rules</h2>
+<ol>
+    <li>The output must be printed to <strong>STDOUT</strong>.</li>
+    <li>Program gets three arguments (argv).</li>
+    <li>First argument is a <strong>SPS</strong> (samples per second). If you want to hear music, SPS must have a value 44100 </li>
+    <li>Second argument is a <strong>volume</strong>, between <code>1</code> and <code>127</code>.</li>
+    <li>Last argument is a <strong>note notation</strong> (see below).</li>
+    <li>Arguments are always valid.</li>
+</ol>
+
+<h2 id="note">Note notation</h2>
+
+<ol>
+    <li>The notes are the input argument for the program.</li>
+    <li>The notes are given as a text string.</li>
+    <li>A single note is written in the form of <code>{note}.{note length}</code>.</li>
+    <li>A single pause is written as <code>|.{ length of pause}</code>.</li>
+    <li>Commas separate the consecutive notes and pauses.</li>
+    <li>The notes and pauses are read from left to right.</li>
+</ol>
+
+Possible values of the notes are:
+
+<pre class='terminal'>C3, C#3, D3, D#3, E3, F3, F#3, G3, G#3, A3, A#3, H3
+C4, C#4, D4, D#4, E4, F4, F#4, G4, G#4, A4, A#4, H4
+C5, C#5, D5, D#5, E5, F5, F#5, G5, G#5, A5, A#5, H5</pre>
+
+
+Possible values for a note and pause length:
+
+<pre class='terminal'>1, 2, 4, 8, 16</pre>
+
+
+Examples of the note notation:
+
+<pre class='terminal'>C3.8
+F#5.1
+|.16
+C4.1,D4.1,E4.2,F4.8,F4.8,|.8
+C5.1,H4.1,A4.2,G#4.16,A4.8,|.2
+F#5.1,|.1,C3.1</pre>
+
+
+<h2 id="wav">Conversion of notes to WAV</h2>
+
+<ol>
+    <li>The WAV file consists of a header and data (both are described below).</li>
+    <li>In the WAV file, the sound is saved as a sequence of values called <b>samples</b>.</li>
+    <li>A single sound sample is saved in one byte.</li>
+    <li>By <code>SPS</code> (samples per second) we mean the number of samples that corresponds to the second of the sound.</li>
+    <li><code>SPS</code> is the input argument for the program.</li>
+    <li>The encoded in Base64 WAV file (header + data) is displayed (the program output).</li>
+</ol>
+
+<h2 id="data">Data</h2>
+
+<ol>
+    <li>We generate the data by converting notes and pauses into samples sequences.</li>
+    <li>The values of the samples for the notes are calculated based on frequency (given in the table below), volume and sinus function according to the pseudo-code below.</li>
+    <li>For the pause, each sample has a value of 128.</li>
+    <li>The number of samples for notes and pauses is determined by their length, according to the formula <code>floor(SPS / {note/pause length})</code>.</li>
+    <li>The number of samples for notes may be bigger because the series of values corresponding to a note must end with 128.</li>
+    <li>The volume is indicated by <code>VOL</code> and is the input argument for the program.</li>
+</ol>
+
+
+<pre class='terminal'>data := collection of samples
+signCoefficient := 1
+i := 0
+for each note in notes do:
+	freq := frequency of note
+	n := floor(SPS / note length)
+	lastSign := 1
+	sign := 1
+	while true do:
+		if note is pause then:
+			val := 128
+		else then:
+			val := 128 + VOL * signCoefficient * sin(i * 2*PI / SPS * freq)
+			sign := signCoefficient * sin(i * 2*PI / SPS * freq) &gt;= 0 ? 1 : -1
+		if i &gt;= n and (sign != lastSign or note is pause) then:
+			signCoefficient := sign
+			i := 1
+			break
+		add val to data
+		i := i + 1
+		lastSign := sign</pre>
+
+
+<table class="border">
+    <thead>
+        <tr>
+            <th>Note</th>
+            <th>Frequency</th>
+            <th>Note</th>
+            <th>Frequency</th>
+            <th>Note</th>
+            <th>Frequency</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>C3</td>
+            <td>130.81</td>
+            <td>C4</td>
+            <td>261.63</td>
+            <td>C5</td>
+            <td>523.25</td>
+        </tr>
+        <tr>
+            <td>C#3</td>
+            <td>138.59</td>
+            <td>C#4</td>
+            <td>277.18</td>
+            <td>C#5</td>
+            <td>554.37</td>
+        </tr>
+        <tr>
+            <td>D3</td>
+            <td>146.83</td>
+            <td>D4</td>
+            <td>293.66</td>
+            <td>D5</td>
+            <td>587.33</td>
+        </tr>
+        <tr>
+            <td>D#3</td>
+            <td>155.56</td>
+            <td>D#4</td>
+            <td>311.13</td>
+            <td>D#5</td>
+            <td>622.25</td>
+        </tr>
+        <tr>
+            <td>E3</td>
+            <td>164.81</td>
+            <td>E4</td>
+            <td>329.63</td>
+            <td>E5</td>
+            <td>659.25</td>
+        </tr>
+        <tr>
+            <td>F3</td>
+            <td>174.61</td>
+            <td>F4</td>
+            <td>349.23</td>
+            <td>F5</td>
+            <td>698.46</td>
+        </tr>
+        <tr>
+            <td>F#3</td>
+            <td>185.00</td>
+            <td>F#4</td>
+            <td>369.99</td>
+            <td>F#5</td>
+            <td>739.99</td>
+        </tr>
+        <tr>
+        <td>G3</td>
+            <td>196.00</td>
+            <td>G4</td>
+            <td>392.00</td>
+            <td>G5</td>
+            <td>783.99</td>
+        </tr>
+        <tr>
+            <td>G#3</td>
+            <td>207.65</td>
+            <td>G#4</td>
+            <td>415.30</td>
+            <td>G#5</td>
+            <td>830.61</td>
+        </tr>
+        <tr>
+            <td>A3</td>
+            <td>220.00</td>
+            <td>A4</td>
+            <td>440.00</td>
+            <td>A5</td>
+            <td>880.00</td>
+        </tr>
+        <tr>
+            <td>A#3</td>
+            <td>233.08</td>
+            <td>A#4</td>
+            <td>466.16</td>
+            <td>A#5</td>
+            <td>932.33</td>
+        </tr>
+        <tr>
+            <td>H3</td>
+            <td>246.94</td>
+            <td>H4</td>
+            <td>493.88</td>
+            <td>H5</td>
+            <td>987.77</td>
+        </tr>
+    </tbody>
+</table>
+
+<h2 id="header">Header</h2>
+
+<ol>
+    <li>The header is a 44-byte block of data preceding the samples data.</li>
+    <li>Numerical values in the header are written as little-endian with an alignment to the indicated number of bytes.</li>
+    <li>The <code>NOFS</code> value is the total number of samples.</li>
+    <li>The <code>WAVEfmt </code> value ends with space.</li>
+    <li>The values <code>RIFF</code>, <code>WAVEfmt, </code> and <code>date</code> are normal text strings.</li>
+</ol>
+
+
+<pre class='terminal'>                    { header structure in bytes }
++------+-----+-----+-----+-----+-----+-----+-----+-----+-----+------+
+| 00 01 02 03 04 05 06 07 08 09 10 11 12 13 14 15 16 17 18 19 20 21 | // bytes indexes
++------------+-----------+-----------------------+-----------+------+
+| RIFF       | 44 + NOFS | WAVEfmt               | 16        | 1    |
++------+-----------+-----------+-----+-----+-----------+------------+
+| 1    | SPS       | SPS       | 1   | 8   | data      | NOFS       |
++-------------------------------------------------------------------+
+| samples...
+</pre>
+
+
+<h2 id="input">Input</h2>
+
+The programme will be run with an argument in the form of a text string consisting of the number of samples per second, volume and notes/pauses.
+
+<pre class='terminal'>./yourscript SPS VOL &quot;{notes and pauses}&quot;
+</pre>
+
+
+<h3>Examples</h3>
+
+<pre class='terminal'>32 90 &quot;C3.8&quot;
+16 1 &quot;F#5.1&quot;
+16 127 &quot;|.16&quot;
+32 80 &quot;C4.1,D4.1,E4.2,F4.8,F4.8,|.8&quot;
+36 30 &quot;C5.1,H4.1,A4.2,G#4.16,A4.8,|.2&quot;
+16 1 &quot;F#5.1,|.1,C3.1&quot;
+</pre>
+
+
+<h2 id="output">Output</h2>
+
+<h3>Examples</h3>
+
+
+<pre class='terminal'>Input:
+./your_script 32 90 &quot;C3.8&quot;
+
+Header(dec):
++--------+-------+-------+-------+-------+-------+-------+-------+-------+-------+--------+
+| 082 073 070 070|050 000 000 000|087 065 086 069 102 109 116 032|016 000 000 000|001 000 |
++--------+-------+-------+-------+-------+-------+-------+-------+-------+-------+--------+
+| 001 000|032 000 000 000|032 000 000 000|001 000|008 000|100 097 116 097|006 000 000 000 |
++--------+-------+-------+-------+-------+-------+-------+-------+-------+-------+--------+
+Data(dec):
++--------+-------+-------+-------+-------+-------+-------+-------+-------+-------+--------+
+| 128 175 208 217 200 161                                                                 |
++--------+-------+-------+-------+-------+-------+-------+-------+-------+-------+--------+
+
+Header(hex):
++------+-----+-----+-----+-----+-----+-----+-----+-----+-----+------+
+| 52 49 46 46|32 00 00 00|57 41 56 45 66 6d 74 20|10 00 00 00|01 00 |
++------+-----+-----+-----+-----+-----+-----+-----+-----+-----+------+
+| 01 00|20 00 00 00|20 00 00 00|01 00|08 00|64 61 74 61|06 00 00 00 |
++------+-----+-----+-----+-----+-----+-----+-----+-----+-----+------+
+Data(hex):
++------+-----+-----+-----+-----+-----+-----+-----+-----+-----+------+
+| 80 af d0 d9 c8 a1                                                 |
++------+-----+-----+-----+-----+-----+-----+-----+-----+-----+------+
+
+Output:
+UklGRjIAAABXQVZFZm10IBAAAAABAAEAIAAAACAAAAABAAgAZGF0YQYAAACAr9DZyKE=
+</pre>
+
+
+<pre class='terminal'>Input:
+./your_script 16 1 &quot;F#5.1&quot;
+
+Header(dec):
++--------+-------+-------+-------+-------+-------+-------+-------+-------+-------+--------+
+| 082 073 070 070|061 000 000 000|087 065 086 069 102 109 116 032|016 000 000 000|001 000 |
++--------+-------+-------+-------+-------+-------+-------+-------+-------+-------+--------+
+| 001 000|016 000 000 000|016 000 000 000|001 000|008 000|100 097 116 097|017 000 000 000 |
++--------+-------+-------+-------+-------+-------+-------+-------+-------+-------+--------+
+Data(dec):
++--------+-------+-------+-------+-------+-------+-------+-------+-------+-------+--------+
+| 128 128 128 127 127 128 128 127 127 128 128 127 127 128 128 127 127                     |
++--------+-------+-------+-------+-------+-------+-------+-------+-------+-------+--------+
+
+Header(hex):
++------+-----+-----+-----+-----+-----+-----+-----+-----+-----+------+
+| 52 49 46 46|3d 00 00 00|57 41 56 45 66 6d 74 20|10 00 00 00|01 00 |
++------+-----+-----+-----+-----+-----+-----+-----+-----+-----+------+
+| 01 00|10 00 00 00|10 00 00 00|01 00|08 00|64 61 74 61|11 00 00 00 |
++------+-----+-----+-----+-----+-----+-----+-----+-----+-----+------+
+Data(hex):
++------+-----+-----+-----+-----+-----+-----+-----+-----+-----+------+
+| 80 80 80 7f 7f 80 80 7f 7f 80 80 7f 7f 80 80 7f 7f                |
++------+-----+-----+-----+-----+-----+-----+-----+-----+-----+------+
+
+Output:
+UklGRj0AAABXQVZFZm10IBAAAAABAAEAEAAAABAAAAABAAgAZGF0YREAAACAgIB/f4CAf3+AgH9/gIB/fw==
+</pre>
+
+
+<pre class='terminal'>Input:
+./your_script 16 127 &quot;|.16&quot;
+
+Header(dec):
++--------+-------+-------+-------+-------+-------+-------+-------+-------+-------+--------+
+| 082 073 070 070|045 000 000 000|087 065 086 069 102 109 116 032|016 000 000 000|001 000 |
++--------+-------+-------+-------+-------+-------+-------+-------+-------+-------+--------+
+| 001 000|016 000 000 000|016 000 000 000|001 000|008 000|100 097 116 097|001 000 000 000 |
++--------+-------+-------+-------+-------+-------+-------+-------+-------+-------+--------+
+Data(dec):
++--------+-------+-------+-------+-------+-------+-------+-------+-------+-------+--------+
+| 128                                                                                     |
++--------+-------+-------+-------+-------+-------+-------+-------+-------+-------+--------+
+
+Header(hex):
++------+-----+-----+-----+-----+-----+-----+-----+-----+-----+------+
+| 52 49 46 46|2d 00 00 00|57 41 56 45 66 6d 74 20|10 00 00 00|01 00 |
++------+-----+-----+-----+-----+-----+-----+-----+-----+-----+------+
+| 01 00|10 00 00 00|10 00 00 00|01 00|08 00|64 61 74 61|01 00 00 00 |
++------+-----+-----+-----+-----+-----+-----+-----+-----+-----+------+
+Data(hex):
++------+-----+-----+-----+-----+-----+-----+-----+-----+-----+------+
+| 80                                                                |
++------+-----+-----+-----+-----+-----+-----+-----+-----+-----+------+
+
+Output:
+UklGRi0AAABXQVZFZm10IBAAAAABAAEAEAAAABAAAAABAAgAZGF0YQEAAACA
+</pre>
+
+
+<pre class='terminal'>Input:
+./your_script 32 80 &quot;C4.1,D4.1,E4.2,F4.8,F4.8,|.8&quot;
+
+Header(dec):
++--------+-------+-------+-------+-------+-------+-------+-------+-------+-------+--------+
+| 082 073 070 070|136 000 000 000|087 065 086 069 102 109 116 032|016 000 000 000|001 000 |
++--------+-------+-------+-------+-------+-------+-------+-------+-------+-------+--------+
+| 001 000|032 000 000 000|032 000 000 000|001 000|008 000|100 097 116 097|092 000 000 000 |
++--------+-------+-------+-------+-------+-------+-------+-------+-------+-------+--------+
+Data(dec):
++--------+-------+-------+-------+-------+-------+-------+-------+-------+-------+--------+
+| 128 199 192 114 051 073 155 207 171 087 048 096 179 205 146 066 054 123 197 194 118 052 |
+| 069 151 206 175 091 048 092 175 206 150 056 064 143 205 181 097 048 087 171 207 154 072 |
+| 051 116 193 198 124 054 066 146 206 178 094 048 090 174 206 151 069 052 119 203 080 082 |
+| 204 125 052 177 171 050 132 202 076 086 205 120 054 086 057 048 062 095 086 057 048 062 |
+| 095 128 128 128                                                                         |
++--------+-------+-------+-------+-------+-------+-------+-------+-------+-------+--------+
+
+Header(hex):
++------+-----+-----+-----+-----+-----+-----+-----+-----+-----+------+
+| 52 49 46 46|88 00 00 00|57 41 56 45 66 6d 74 20|10 00 00 00|01 00 |
++------+-----+-----+-----+-----+-----+-----+-----+-----+-----+------+
+| 01 00|20 00 00 00|20 00 00 00|01 00|08 00|64 61 74 61|5c 00 00 00 |
++------+-----+-----+-----+-----+-----+-----+-----+-----+-----+------+
+Data(hex):
++------+-----+-----+-----+-----+-----+-----+-----+-----+-----+------+
+| 80 c7 c0 72 33 49 9b cf ab 57 30 60 b3 cd 92 42 36 7b c5 c2 76 34 |
+| 45 97 ce af 5b 30 5c af ce 96 38 40 8f cd b5 61 30 57 ab cf 9a 48 |
+| 33 74 c1 c6 7c 36 42 92 ce b2 5e 30 5a ae ce 97 45 34 77 cb 50 52 |
+| cc 7d 34 b1 ab 32 84 ca 4c 56 cd 78 36 56 39 30 3e 5f 56 39 30 3e |
+| 5f 80 80 80                                                       |
++------+-----+-----+-----+-----+-----+-----+-----+-----+-----+------+
+
+Output:
+UklGRogAAABXQVZFZm10IBAAAAABAAEAIAAAACAAAAABAAgAZGF0YVwAAACAx8ByM0mbz6tXMGCzzZJCNnvFwnY0RZfOr1swXK/OljhAj821YTBXq8+aSDN0wcZ8NkKSzrJeMFquzpdFNHfLUFLMfTSxqzKEykxWzXg2VjkwPl9WOTA+X4CAgA==
+</pre>
+
+
+<pre class='terminal'>Input:
+./your_script 36 30 &quot;C5.1,H4.1,A4.2,G#4.16,A4.8,|.2&quot;
+
+Header(dec):
++--------+-------+-------+-------+-------+-------+-------+-------+-------+-------+--------+
+| 082 073 070 070|154 000 000 000|087 065 086 069 102 109 116 032|016 000 000 000|001 000 |
++--------+-------+-------+-------+-------+-------+-------+-------+-------+-------+--------+
+| 001 000|036 000 000 000|036 000 000 000|001 000|008 000|100 097 116 097|110 000 000 000 |
++--------+-------+-------+-------+-------+-------+-------+-------+-------+-------+--------+
+Data(dec):
++--------+-------+-------+-------+-------+-------+-------+-------+-------+-------+--------+
+| 128 121 140 109 150 101 156 098 157 100 152 107 143 118 130 131 117 144 106 153 099 157 |
+| 098 156 102 150 110 139 122 126 135 114 147 104 155 098 098 139 152 106 111 155 134 098 |
+| 133 155 111 106 152 139 098 127 157 116 102 148 145 100 121 157 122 100 144 149 103 115 |
+| 157 128 098 138 153 098 117 153 147 108 102 138 157 127 098 117 153 147 108 102 138 157 |
+| 134 098 117 153 147 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 128 |
++--------+-------+-------+-------+-------+-------+-------+-------+-------+-------+--------+
+
+Header(hex):
++------+-----+-----+-----+-----+-----+-----+-----+-----+-----+------+
+| 52 49 46 46|9a 00 00 00|57 41 56 45 66 6d 74 20|10 00 00 00|01 00 |
++------+-----+-----+-----+-----+-----+-----+-----+-----+-----+------+
+| 01 00|24 00 00 00|24 00 00 00|01 00|08 00|64 61 74 61|6e 00 00 00 |
++------+-----+-----+-----+-----+-----+-----+-----+-----+-----+------+
+Data(hex):
++------+-----+-----+-----+-----+-----+-----+-----+-----+-----+------+
+| 80 79 8c 6d 96 65 9c 62 9d 64 98 6b 8f 76 82 83 75 90 6a 99 63 9d |
+| 62 9c 66 96 6e 8b 7a 7e 87 72 93 68 9b 62 62 8b 98 6a 6f 9b 86 62 |
+| 85 9b 6f 6a 98 8b 62 7f 9d 74 66 94 91 64 79 9d 7a 64 90 95 67 73 |
+| 9d 80 62 8a 99 62 75 99 93 6c 66 8a 9d 7f 62 75 99 93 6c 66 8a 9d |
+| 86 62 75 99 93 80 80 80 80 80 80 80 80 80 80 80 80 80 80 80 80 80 |
++------+-----+-----+-----+-----+-----+-----+-----+-----+-----+------+
+
+Output:
+UklGRpoAAABXQVZFZm10IBAAAAABAAEAJAAAACQAAAABAAgAZGF0YW4AAACAeYxtlmWcYp1kmGuPdoKDdZBqmWOdYpxmlm6Len6HcpNom2Jii5hqb5uGYoWbb2qYi2J/nXRmlJFkeZ16ZJCVZ3OdgGKKmWJ1mZNsZoqdf2J1mZNsZoqdhmJ1mZOAgICAgICAgICAgICAgICAgA==
+</pre>
+
+
+<pre class='terminal'>Input:
+./your_script 16 1 &quot;F#5.1,|.1,C3.1&quot;
+
+Header(dec):
++--------+-------+-------+-------+-------+-------+-------+-------+-------+-------+--------+
+| 082 073 070 070|093 000 000 000|087 065 086 069 102 109 116 032|016 000 000 000|001 000 |
++--------+-------+-------+-------+-------+-------+-------+-------+-------+-------+--------+
+| 001 000|016 000 000 000|016 000 000 000|001 000|008 000|100 097 116 097|049 000 000 000 |
++--------+-------+-------+-------+-------+-------+-------+-------+-------+-------+--------+
+Data(dec):
++--------+-------+-------+-------+-------+-------+-------+-------+-------+-------+--------+
+| 128 128 128 127 127 128 128 127 127 128 128 127 127 128 128 127 127 128 128 128 128 128 |
+| 128 128 128 128 128 128 128 128 128 128 128 128 127 127 127 128 128 128 127 127 127 128 |
+| 128 128 127 127 127                                                                     |
++--------+-------+-------+-------+-------+-------+-------+-------+-------+-------+--------+
+
+Header(hex):
++------+-----+-----+-----+-----+-----+-----+-----+-----+-----+------+
+| 52 49 46 46|5d 00 00 00|57 41 56 45 66 6d 74 20|10 00 00 00|01 00 |
++------+-----+-----+-----+-----+-----+-----+-----+-----+-----+------+
+| 01 00|10 00 00 00|10 00 00 00|01 00|08 00|64 61 74 61|31 00 00 00 |
++------+-----+-----+-----+-----+-----+-----+-----+-----+-----+------+
+Data(hex):
++------+-----+-----+-----+-----+-----+-----+-----+-----+-----+------+
+| 80 80 80 7f 7f 80 80 7f 7f 80 80 7f 7f 80 80 7f 7f 80 80 80 80 80 |
+| 80 80 80 80 80 80 80 80 80 80 80 80 7f 7f 7f 80 80 80 7f 7f 7f 80 |
+| 80 80 7f 7f 7f                                                    |
++------+-----+-----+-----+-----+-----+-----+-----+-----+-----+------+
+
+Output:
+UklGRl0AAABXQVZFZm10IBAAAAABAAEAEAAAABAAAAABAAgAZGF0YTEAAACAgIB/f4CAf3+AgH9/gIB/f4CAgICAgICAgICAgICAgICAf39/gICAf39/gICAf39/
+</pre>
+
+
+In the bonus, you can play generated melody <a href="https://base64.guru/converter/decode/audio">here</a>.
+
+<h2 id="support">Support</h2>
+
+If you stuck, please ask on <a href="https://join.slack.com/t/coding-dojo-silesia/shared_invite/zt-571ku8tz-oXzaVGyrtyiDe~rPwUHi1Q">the slack</a> or IRC channel #gynvaelstream@Freenode
+</div>
+
+    </body>
+</html>
